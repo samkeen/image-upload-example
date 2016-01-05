@@ -11,6 +11,7 @@ The strategy used by this app is:
 
 1. Takes URL of image from user
 2. Downloads the image locally, then uploads it to S3
+3. Push Job to SQS
 
 Usage
 -----

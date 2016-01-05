@@ -1,0 +1,4 @@
+/.idea/
+/image_downloads/*
+!/image_downloads/README.rst
+__pycache__/

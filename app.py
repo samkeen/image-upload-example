@@ -47,26 +47,28 @@ def images():
 
 @app.route('/images/', methods=['POST'])
 def image_form():
-    s3_bucket_url = get_s3_url()
-    parsed_img_src = parse_img_src_url(request.form['image_url'])
-    this_dir = os.path.abspath(os.path.dirname(__file__))
-    image_download_file = os.path.join(this_dir, 'image_downloads', parsed_img_src['img_local_name'])
-    image_request = requests.get(parsed_img_src['img_src_url'], stream=True)
-    if image_request.status_code == 200:
-        with open(image_download_file, 'wb') as f:
-            for chunk in image_request:
-                f.write(chunk)
-        # upload to S3
-        s3 = boto3.resource('s3')
-        with open(image_download_file, 'rb') as image_bytes:
-            # https://boto3.readthedocs.org/en/latest/reference/services/s3.html#S3.Client.put_object
-            s3.Bucket(s3_bucket_url).put_object(Key=image_name, Body=image_bytes)
-    else:
-        # @todo meaningful error message
-        pass
+    try:
+        s3_bucket_url = get_s3_url()
+        parsed_img_src = parse_img_src_url(request.form['image_url'])
+        this_dir = os.path.abspath(os.path.dirname(__file__))
+        image_download_file = os.path.join(this_dir, 'image_downloads', parsed_img_src['img_local_name'])
+        image_request = requests.get(parsed_img_src['img_src_url'], stream=True)
+        if image_request.status_code == 200:
+            with open(image_download_file, 'wb') as f:
+                for chunk in image_request:
+                    f.write(chunk)
+            # upload to S3
+            s3 = boto3.resource('s3')
+            with open(image_download_file, 'rb') as image_bytes:
+                # https://boto3.readthedocs.org/en/latest/reference/services/s3.html#S3.Client.put_object
+                s3.Bucket(s3_bucket_url).put_object(Key=parsed_img_src['img_local_name'], Body=image_bytes)
+        else:
+            # @todo meaningful error message
+            pass
 
-    return render_template('image_submitted.html', image_name=parsed_img_src['img_local_name'])
-
+        return render_template('image_submitted.html', image_name=parsed_img_src['img_local_name'])
+    except Exception as e:
+        return render_template('error.html', error_message="OS error: {0}".format(e))
 
 if __name__ == "__main__":
     app.run()

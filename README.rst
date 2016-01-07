@@ -11,9 +11,9 @@ The strategy used by this app is:
 
 1. Takes URL of image from user
 2. Downloads the image locally, then uploads it to S3
-3. Push Job to SQS
+3. Push Job to SQS (see branch: <<<>>>)
 
 Usage
 -----
 
-``S3_URL=http://<path to image S3 bucket> python app.py``
+``S3_BUCKET_NAME=<YOUR BUCKET NAME> python app.py``

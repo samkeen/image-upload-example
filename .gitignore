@@ -2,3 +2,4 @@
 /image_downloads/*
 !/image_downloads/README.rst
 __pycache__/
+*.pyc

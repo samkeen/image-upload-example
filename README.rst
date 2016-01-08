@@ -3,7 +3,7 @@ Image Upload Demo App
 
 This is a very simple app that can upload images on the User's behalf.
 
-It is to be used to demonstrate building distributed computing systems.
+It is to be used to demonstrate building distributed computing systems.  Planning to utilize it for a online course I am developing on Udemy.
 
 *Demo purposes only, not production code ready by any means*
 

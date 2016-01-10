@@ -1,8 +1,18 @@
-<!doctype html>
-<title>Error</title>
-<h1>Error</h1>
-<p>The was an error:</p>
-<pre>
-    {{error_message}}
-</pre>
-<a href="{{url_for('images')}}">Home</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{url_for('static', filename='pure-min.css')}}">
+    <meta charset="UTF-8">
+    <title>Error</title>
+</head>
+<body>
+<div class="pure-g" style="padding-left: 10px;">
+    <div class="pure-u-1">
+        <h1>Error</h1>
+        <a href="{{url_for('images')}}">Home</a>
+        <p>The was an error:</p>
+        <pre>{{error_message}}</pre>
+    </div>
+</div>
+</body>
+</html>

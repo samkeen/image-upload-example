@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{url_for('static', filename='pure-min.css')}}">
+    <meta charset="UTF-8">
+    <title>Image Submitted</title>
+</head>
+<body>
+<div class="pure-g" style="padding-left: 10px;">
+    <div class="pure-u-1">
+        <h1>Image Submitted</h1>
+        <p><a href="{{url_for('images')}}">Home</a></p>
+        <p>The Image: "{{image_name}}" has been stored</p>
+        <p>Source: <a href="{{source_url}}">{{source_url}}</a></p>
+        <p>Destination: <a href="{{destination_url}}">{{destination_url}}</a></p>
+    </div>
+</div>
+</body>
+</html>

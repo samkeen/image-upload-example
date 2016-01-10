@@ -1,8 +1,22 @@
-<!doctype html>
-<title>Submit Image</title>
-<h1>Submit Image</h1>
-<form action="{{ url_for('images') }}" method="post">
-    <label for="image_url">Image URL</label>
-    <input type="text" name="image_url" id="image_url" />
-    <input type="submit" value="submit">
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{url_for('static', filename='pure-min.css')}}">
+    <meta charset="UTF-8">
+    <title>Submit Image</title>
+</head>
+<body>
+<div class="pure-g" style="padding-left: 10px;">
+    <div class="pure-u-1">
+        <h1>Submit Image</h1>
+        <p>Enter the URL to the Image you would like to have uploaded</p>
+        <form action="{{ url_for('images') }}" method="post" class="pure-form">
+            <p><label for="image_url">Image URL</label></p>
+            <p><input type="text" name="image_url" id="image_url" style='width:70%'/></p>
+            <p><button type="submit" class="pure-button pure-button-primary">Submit</button></p>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

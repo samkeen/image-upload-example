@@ -118,6 +118,7 @@ def image_form():
             return render_template('error.html', error_message="Error retrieving image. Response code: {0} {1}"
                                    .format(get_img_response.status_code, get_img_response.reason))
 
+        os.remove(local_img_filepath)
         return redirect(url_for('uploaded_image',
                                 name=parsed_img_src['img_local_name'],
                                 source=parsed_img_src['img_src_url'],

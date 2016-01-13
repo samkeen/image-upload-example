@@ -1,0 +1,94 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The Application Server",
+  "Parameters": {
+    "amiId": {
+      "Type": "String",
+      "AllowedPattern": "^ami-[0-9a-f]+$",
+      "Description": "The Amazon Linux AMI Id to use for the App Server",
+      "Default": "ami-f0091d91"
+    },
+    "AppServerIamInstanceProfile": {
+      "Type": "String",
+      "Description": "The Iam Instance Profile to launch the App Server with. Example: 'ImageApp-Ec2RoleInstanceProfile-UY3CD31154G6'"
+    },
+    "ImageS3BucketName": {
+      "Type": "String",
+      "Description": "The name of the bucket to store S3 Images. Example: 'ImageApp-imagesbucket-13sbtvi5svbmc'"
+    },
+    "KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "Must be the name of an existing EC2 KeyPair."
+    }
+  },
+  "Resources": {
+    "AppServerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable SSH access",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "component",
+            "Value": "build_machine_access"
+          }
+        ]
+      }
+    },
+    "MyEC2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Ref": "amiId"
+        },
+        "InstanceType": "t2.micro",
+        "IamInstanceProfile": {
+          "Ref": "AppServerIamInstanceProfile"
+        },
+        "SecurityGroups": [{ "Ref": "AppServerSecurityGroup" }],
+        "KeyName": { "Ref": "KeyName" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Image App Server"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "yum -y update\n",
+                "yum -y install git python34-virtualenv\n",
+                "alternatives --set python /usr/bin/python3.4\n",
+                "cd /opt\n",
+                "git clone https://github.com/samkeen/image-upload-example.git\n",
+                "cd image-upload-example/\n",
+                "pip install -r requirements.txt\n",
+                "S3_BUCKET_NAME=",
+                {
+                  "Ref": "ImageS3BucketName"
+                },
+                " python app.py\n"
+              ]
+            ]
+          }
+        }
+      }
+    }
+  }
+}

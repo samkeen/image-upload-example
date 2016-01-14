@@ -140,5 +140,5 @@ def uploaded_image():
 
 if __name__ == "__main__":
     flask_host = os.environ['FLASK_HOST'].strip() if 'FLASK_HOST' in os.environ else '127.0.0.1'
-    flask_port = os.environ['FLASK_PORT'].strip() if 'FLASK_PORT' in os.environ else 5000
+    flask_port = int(os.environ['FLASK_PORT'].strip()) if 'FLASK_PORT' in os.environ else 5000
     app.run(host=flask_host, port=flask_port)

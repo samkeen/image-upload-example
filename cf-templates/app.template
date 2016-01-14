@@ -78,6 +78,7 @@
             "Fn::Join": [
               "",
               [
+                "#!/bin/bash -xe\n",
                 "yum -y update\n",
                 "yum -y install git python34-virtualenv\n",
                 "alternatives --set python /usr/bin/python3.4\n",

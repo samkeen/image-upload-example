@@ -1,138 +1,97 @@
 from flask import Flask, render_template, request, url_for, redirect
-import requests
-import os
-import hashlib
-import boto3
 from urllib.parse import urlparse, unquote
+import os, hashlib, boto3, json
 
 
 # ======= Excuse my procedural coding style ========
-# I felt it better to keep this sample as simple as possible, working under
-# the assumption that many of those exploring this file will not have
-# Python as one of their primary languages.
-# So rather than going full OO and requiring the reader to understand Python
-# name spacing and packaging, I've kept it to a single, procedural file,
-# one that can easily be refactored to a more appropriate style.
+# I felt it better to keep this sample as simple as possible, working under the assumption that many of those
+# exploring this file may not have Python as one of their primary languages.
+#
+# So rather than going full Object Oriented and requiring the reader to understand Python name spacing and
+# packaging, and Object model,  I've kept it to a single, procedural file, one that can easily be refactored to a
+# more appropriate style by the reader.
 
-def get_images_bucket_name():
-    """
-    Retrieves the name of the S3 image storage bucket from the environment
+def get_required_env_var(var_name):
+    """Retrieves an env var's value from the environment, RuntimeError if not found
 
-    :return: The AWS name of the bucket
+    :param var_name:
+    :return: String ENV var's value
     """
-    if 'S3_BUCKET_NAME' in os.environ:
-        s3_bucket_name = os.environ['S3_BUCKET_NAME'].strip()
+    if var_name in os.environ:
+        value = os.environ[var_name].strip()
     else:
-        raise Exception('No "S3_BUCKET_NAME" environment variable found')
-    return s3_bucket_name
+        raise RuntimeError('No "{}" environment variable found'.format(var_name))
+    return value
 
 
-def parse_img_src_url(image_src_url):
-    """
-    Normalizes the source image URL and also produces a local image name derived from said URL.
+def get_unique_local_img_name(image_src_url):
+    """Uses the 'filename' from the URL + an MD5 hash of the entire URL to create a unique local name to use for
+    the image file.
 
     :param image_src_url:
-    :return: Dictionary of img_src_url: <image's source URL>, img_local_name: <Local image filename>
+    :return: str "{MD5 hash of src URL}-{file name of segemnt of src URL}"
     """
-    image_src_url = image_src_url.strip()
     source_image_url_parts = urlparse(image_src_url)
     source_image_basename = os.path.basename(unquote(source_image_url_parts.path))
-    image_name = '{0}-{1}'.format(hashlib.md5(image_src_url.encode('utf-8')).hexdigest(), source_image_basename)
-    return {
-        'img_src_url': image_src_url,
-        'img_local_name': image_name
-    }
+    return '{0}-{1}'.format(hashlib.md5(image_src_url.encode('utf-8')).hexdigest(), source_image_basename)
 
 
-def build_img_local_filepath(img_basename):
+def put_work_to_queue(local_img_name, img_src_url):
+    """Send the Message to the SQS work queue
+
+    :param str local_img_name:
+    :param str img_src_url:
+    :return: str The SQS message id
     """
-    Construct the full path to store the local image at.
+    sqs = boto3.resource('sqs')
+    queue = sqs.get_queue_by_name(QueueName=get_required_env_var('WORK_QUEUE_NAME'))
+    message_body = json.dumps({"img_src_url": img_src_url, "img_local_name": local_img_name}, indent=2)
+    response = queue.send_message(MessageBody=message_body)
 
-    :param img_basename:
-    :return: Full path to local directory to store image within.
+    return response.get('MessageId')
+
+
+def get_s3_base_url(s3_bucket_name):
+    """returns the URL for an S3 bucket
+
+    :param str s3_bucket_name:
+    :return: str full URL to the bucket
     """
-    this_dir = os.path.abspath(os.path.dirname(__file__))
-    return os.path.join(this_dir, 'image_downloads', img_basename)
+    bucket_location = boto3.client('s3').get_bucket_location(Bucket=s3_bucket_name)
+    return "https://s3-{0}.amazonaws.com/{1}".format(bucket_location['LocationConstraint'],
+                                                     s3_bucket_name)
 
 
-def write_img_to_file(source, destination):
-    """
-    Writes Image to local file system
-
-    :param source: The Requests response for the Image
-    :param destination: The full file path to store the Image on the local file system
-    :return: void
-    """
-    with open(destination, 'wb') as f:
-        for chunk in source:
-            f.write(chunk)
-
-
-def put_img_to_s3(local_img_filepath, key_name):
-    """
-    Uploads the image to the Images Storage S3 bucket
-
-    :param local_img_filepath:
-    :param key_name:
-    :return: Returns the full S3 HTTP url to the S3 Object.
-    """
-    s3 = boto3.resource('s3')
-    with open(local_img_filepath, 'rb') as image_bytes:
-        # https://boto3.readthedocs.org/en/latest/reference/services/s3.html#S3.Client.put_object
-        s3_bucket_name = get_images_bucket_name()
-        s3.Bucket(s3_bucket_name).put_object(Key=key_name, Body=image_bytes, ACL='public-read')
-        bucket_location = boto3.client('s3').get_bucket_location(Bucket=s3_bucket_name)
-        return "https://s3-{0}.amazonaws.com/{1}/{2}".format(bucket_location['LocationConstraint'],
-                                                             s3_bucket_name,
-                                                             key_name)
-
-
+# This app uses the Flask web framework. For documentation see: http://flask.pocoo.org/
 app = Flask(__name__)
-# check that s3 bucket name was defined on startup
-get_images_bucket_name()
+# check that the expected ENV vars are in place on startup of the server
+get_required_env_var('S3_BUCKET_NAME')
+get_required_env_var('WORK_QUEUE_NAME')
 
 
-@app.route('/images/')
+@app.route('/images')
 def images():
-    """
-    Renders the Upload Image form
-    """
     return render_template('images.html')
 
 
-@app.route('/images/', methods=['POST'])
+@app.route('/images', methods=['POST'])
 def image_form():
-    """
-    Accepts POST'd image source URL.
-     - pulls the image down and stores it locally
-     - pushes the image up to S3
-    """
     try:
-        parsed_img_src = parse_img_src_url(request.form['image_url'])
-        local_img_filepath = build_img_local_filepath(parsed_img_src['img_local_name'])
-        get_img_response = requests.get(parsed_img_src['img_src_url'], stream=True)
-        if get_img_response.status_code == 200:
-            write_img_to_file(get_img_response, local_img_filepath)
-            s3_img_url = put_img_to_s3(local_img_filepath, parsed_img_src['img_local_name'])
-        else:
-            return render_template('error.html', error_message="Error retrieving image. Response code: {0} {1}"
-                                   .format(get_img_response.status_code, get_img_response.reason))
-
-        os.remove(local_img_filepath)
-        return redirect(url_for('uploaded_image',
-                                name=parsed_img_src['img_local_name'],
-                                source=parsed_img_src['img_src_url'],
-                                destination=s3_img_url))
+        img_src_url = request.form['image_url'].strip()
+        img_local_name = get_unique_local_img_name(img_src_url)
+        work_receipt = put_work_to_queue(img_local_name, img_src_url)
+        target_s3_base_url = get_s3_base_url(get_required_env_var('S3_BUCKET_NAME'))
+        return redirect(url_for('request_received',
+                                name=img_local_name,
+                                source=img_src_url,
+                                destination="{}/{}".format(target_s3_base_url, img_local_name)))
     except Exception as e:
         return render_template('error.html', error_message="Error Message: {0}".format(e))
 
 
-@app.route('/uploaded_image/', methods=['GET'])
-def uploaded_image():
-    """
-    Show information about an uploaded Image
-    """
-    return render_template('uploaded_image.html',
+@app.route('/request_received', methods=['GET'])
+def request_received():
+    return render_template('request_received.html',
                            image_name=request.args.get('name', ''),
                            source_url=request.args.get('source', ''),
                            destination_url=request.args.get('destination', ''))

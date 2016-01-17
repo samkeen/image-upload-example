@@ -11,8 +11,11 @@
         <h1>Image Submitted</h1>
         <p><a href="{{url_for('images')}}">Home</a></p>
         <p>The Image: "{{image_name}}" has been stored</p>
-        <p>Source: <a href="{{source_url}}">{{source_url}}</a></p>
-        <p>Destination: <a href="{{destination_url}}">{{destination_url}}</a></p>
+        <p>Source: <a href="{{src_url}}">{{src_url}}</a></p>
+        <p>Destination Original:
+            <a href="{{dest_base_url}}/ORIGINAL-{{dest_img_name}}">{{dest_base_url}}/ORIGINAL-{{dest_img_name}}</a></p>
+        <p>Destination Thumb:
+            <a href="{{dest_base_url}}/THUMB-{{dest_img_name}}">{{dest_base_url}}/THUMB-{{dest_img_name}}</a></p>
     </div>
 </div>
 </body>

@@ -84,7 +84,8 @@ def image_form():
         return redirect(url_for('request_received',
                                 name=img_local_name,
                                 source=img_src_url,
-                                destination="{}/{}".format(target_s3_base_url, img_local_name)))
+                                dest_base_url=target_s3_base_url,
+                                dest_img_name=img_local_name))
     except Exception as e:
         return render_template('error.html', error_message="Error Message: {0}".format(e))
 
@@ -93,8 +94,9 @@ def image_form():
 def request_received():
     return render_template('request_received.html',
                            image_name=request.args.get('name', ''),
-                           source_url=request.args.get('source', ''),
-                           destination_url=request.args.get('destination', ''))
+                           src_url=request.args.get('source', ''),
+                           dest_base_url=request.args.get('dest_base_url', ''),
+                           dest_img_name=request.args.get('dest_img_name', ''))
 
 
 if __name__ == "__main__":

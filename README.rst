@@ -1,10 +1,12 @@
-Image Upload Demo App
+Work Queue Backed Image Upload Demo App
 =====================
 
 This is a very simple app that can upload images on the User's behalf.
 
 It is to be used to demonstrate building distributed computing systems.
 Planning to utilize it for a online course I am developing on Udemy.
+
+The associated Worker App (Utilized AWS SQS), can be found at `here <https://github.com/samkeen/simple-image-worker-example>`_
 
 *Demo purposes only, not production code ready by any means*
 

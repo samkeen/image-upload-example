@@ -3,20 +3,52 @@
 <head>
     <link rel="stylesheet" href="{{url_for('static', filename='pure-min.css')}}">
     <meta charset="UTF-8">
-    <title>Image Submitted</title>
+    <title>Image Processing Results</title>
 </head>
 <body>
 <div class="pure-g" style="padding-left: 10px;">
     <div class="pure-u-1">
-        <h1>Image Submitted</h1>
+        <h1>Image Processing Results</h1>
         <p><a href="{{url_for('images')}}">Home</a></p>
-        <p>The Image: "{{image_name}}" has been stored</p>
-        <p>Source: <a href="{{src_url}}">{{src_url}}</a></p>
-        <p>Destination Original:
-            <a href="{{dest_base_url}}/ORIGINAL-{{dest_img_name}}">{{dest_base_url}}/ORIGINAL-{{dest_img_name}}</a></p>
-        <p>Destination Thumb:
-            <a href="{{dest_base_url}}/THUMB-{{dest_img_name}}">{{dest_base_url}}/THUMB-{{dest_img_name}}</a></p>
+        <h2>Original Image Source URL</h2>
+        <p><a href="{{src_url}}">{{src_url}}</a></p>
+        <h2>Processed Image Thumb Size</h2>
+        <p><a href="{{dest_base_url}}/THUMB-{{dest_img_name}}">{{dest_base_url}}/THUMB-{{dest_img_name}}</a></p>
+        <p><img id="img_thumb" src="{{dest_base_url}}/THUMB-{{dest_img_name}}" onerror="imgError(this);"></p>
+        <h2>Processed Image Original Size</h2>
+        <p><a href="{{dest_base_url}}/ORIGINAL-{{dest_img_name}}">{{dest_base_url}}/ORIGINAL-{{dest_img_name}}</a></p>
+        <p><img id="img_original" src="{{dest_base_url}}/ORIGINAL-{{dest_img_name}}" onerror="imgError(this);"></p>
     </div>
 </div>
+    <script type="text/javascript">
+    /**
+     * Small piece of js that continually tries to set the src URLs of the img tags
+     * to the expected destination URLs of the processed images. If URL is a 404, the
+     * imgError function sets it back to the loader gif
+     */
+    var loader_image_path = "{{url_for('static', filename='loader.gif')}}";
+    var polling_interval = 1000;
+    var img_load_error = {
+        img_original: false,
+        img_thumb: false
+    }
+    function imgError(image) {
+        img_load_error[image.id] = true;
+        image.src = loader_image_path;
+        return true;
+    }
+    function tryImageSource(image_path, target_element_id) {
+      timeoutID = window.setTimeout(function(){
+        var image = document.getElementById(target_element_id);
+        if(img_load_error[target_element_id]) {
+            image.src = image_path;
+            img_load_error[target_element_id] = false;
+            tryImageSource(image_path, target_element_id);
+        }
+      }, polling_interval);
+    }
+    tryImageSource("{{dest_base_url}}/ORIGINAL-{{dest_img_name}}", "img_original");
+    tryImageSource("{{dest_base_url}}/THUMB-{{dest_img_name}}", "img_thumb");
+    </script>
 </body>
 </html>
